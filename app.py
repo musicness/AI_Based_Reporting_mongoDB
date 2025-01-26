@@ -11,7 +11,6 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 # Function to load Google Gemini model and provide SQL query as response
 def get_gemini_response(question, prompt):
     try:
-        # Initialize the Gemini model
         model = genai.GenerativeModel('gemini-pro')
 
         # Generate the response
@@ -31,8 +30,13 @@ def get_gemini_response(question, prompt):
             # print(generated_text)
 
             # Clean up the text (remove unnecessary formatting)
-            # print(generated_text)
-            generated_text = generated_text.strip("```json").strip("```").strip()
+            # generated_text = generated_text.strip("```json").strip("```").strip()
+            import re
+            # cleaned_response = generated_text.replace("```python\n", "").replace("\n```", "")
+            cleaned_response = re.sub(r"```.*?\n|\n```", "", response, flags=re.DOTALL)
+            parsed_response = json.loads(cleaned_response)
+
+            print(cleaned_response)
             return generated_text
         else:
             # Handle case where response is malformed
@@ -47,6 +51,8 @@ def get_gemini_response(question, prompt):
     except Exception as e:
         print(f"Unexpected Error: {e}")
         return None
+    
+    
 # MongoDB connection details
 db_name = "vendorData"
 collection_name = "vendors"
@@ -60,8 +66,11 @@ def read_mongo_query(response):
         db = client[db_name]
         collection = db[collection_name]
 
+        response=response.split()
+        response.pop(0)
+        response=".".join(response)
         # Execute the query
-        results = eval(response) # Evaluate the query string
+        results = eval(f"collection.{response}") # Evaluate the query string
 
         return list(results)
 
